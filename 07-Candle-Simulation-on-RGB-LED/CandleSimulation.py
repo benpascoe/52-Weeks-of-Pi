@@ -1,5 +1,8 @@
 from random import randint
 import unicornhat as unicorn
+import math
+import random
+import time
 
 intensity = 0.75
 unicorn.set_layout(unicorn.AUTO)
