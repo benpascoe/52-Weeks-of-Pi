@@ -1,84 +1,22 @@
-import RPi.GPIO as GPIO
-import threading
-import time
-import random
-import math
+from random import randint
+import unicornhat as unicorn
 
-R = 37
-G = 33
-BUTTON = 22
+intensity = 0.75
+unicorn.set_layout(unicorn.AUTO)
+unicorn.rotation(0)
+width,height=unicorn.get_shape()
 
-pwms = []
-intensity = 1.0
-
-
-def initialize_gpio():
-    GPIO.setmode(GPIO.BOARD)
-    GPIO.setup([R,G], GPIO.OUT, initial=GPIO.LOW)
-    GPIO.setup(BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-    GPIO.add_event_detect(BUTTON, GPIO.FALLING, fan_the_flame, 250)
-
-
-def red_light():
-    p = GPIO.PWM(R, 300)
-    p.start(100)
-    pwms.append(p)
-    while True:
-        p.ChangeDutyCycle(min(random.randint(75, 100) * math.pow(intensity + 0.1, 0.75), 100) if intensity > 0 else 0)
-        rand_flicker_sleep()
-
-
-def green_light():
-    global green_dc
-    p = GPIO.PWM(G, 300)
-    p.start(0)
-    pwms.append(p)
-    while True:
-        p.ChangeDutyCycle(random.randint(33, 44) * math.pow(intensity, 2) if intensity > 0 else 0)
-        rand_flicker_sleep()
-
+while True:
+    x = randint(0, (width-1))
+    y = randint(0, (height-1))
+    r = randint(75, 100)
+    g = randint(33, 44)
+    b = 0
+    r_intensity = math.pow(intensity + 0.1, 0.75)
+    unicorn.brightness(r_intensity)
+    unicorn.set_pixel(x, y, r, g, b)
+    unicorn.show()
+    rand_flicker_sleep()
 
 def rand_flicker_sleep():
     time.sleep(random.randint(3,10) / 100.0)
-
-
-def burning_down():
-    global intensity
-    while True:
-        intensity = max(intensity - .01, 0)
-        time.sleep(.25)
-
-
-def fan_the_flame(_):
-    global intensity
-    intensity = min(intensity + 0.25, 1.0)
-
-
-def light_candle():
-    threads = [
-        threading.Thread(target=red_light),
-        threading.Thread(target=green_light),
-        threading.Thread(target=burning_down)
-    ]
-    for t in threads:
-        t.daemon = True
-        t.start()
-    for t in threads:
-        t.join()
-
-
-def main():
-    try:
-        initialize_gpio()
-        print("\nPress ^C (control-C) to exit the program.\n")
-        light_candle()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        for p in pwms:
-            p.stop()
-        GPIO.cleanup()
-
-
-if __name__ == '__main__':
-    main()
